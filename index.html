@@ -636,8 +636,8 @@
         }
 
         const TOOLS = {
-            create: ['sand', 'water', 'stone', 'wood', 'plant', 'human', 'cement', 'ice', 'oil', 'glass', 'gunpowder', 'nitro', 'methane', 'eraser'],
-            destroy: ['fire', 'lava', 'acid', 'virus', 'smoke', 'steam', 'cloud', 'void', 'tornado', 'nuke', 'meteor', 'laser', 'eraser']
+            create: ['sand', 'water', 'stone', 'wood', 'plant', 'human', 'cement', 'ice', 'oil', 'glass', 'gunpowder', 'nitro', 'methane', 'soil', 'seed', 'snow', 'salt', 'wax', 'plastic', 'gold', 'iron', 'brick', 'coal', 'fuse', 'mud', 'slime', 'mercury', 'helium', 'uranium', 'eraser'],
+            destroy: ['fire', 'lava', 'acid', 'virus', 'smoke', 'steam', 'cloud', 'acid_cloud', 'lava_cloud', 'meteor_cloud', 'void', 'tornado', 'nuke', 'tnuke', 'meteor', 'laser', 'bomb', 'termite', 'antimatter', 'grey_goo', 'napalm', 'thermite', 'fungus', 'poison', 'radiation', 'drill', 'freezer', 'heater', 'shock', 'lightning', 'eraser']
         };
 
         const ELEMENTS = {
@@ -647,7 +647,7 @@
             stone: { id: 3, baseColor: [80, 75, 70], variance: 15, density: 10, type: 'solid' },
             fire: { id: 4, baseColor: [220, 80, 20], variance: 40, density: -1, type: 'gas', life: 30, alive: true },
             wood: { id: 5, baseColor: [90, 55, 30], variance: 20, density: 10, type: 'solid', flammable: true },
-            plant: { id: 6, baseColor: [45, 120, 50], variance: 20, density: 10, type: 'solid', flammable: true },
+            plant: { id: 6, baseColor: [45, 120, 50], variance: 20, density: 10, type: 'solid', flammable: true, maxGrowth: 20 },
             smoke: { id: 7, baseColor: [45, 45, 50], variance: 10, density: -2, type: 'gas', life: 100 },
             acid: { id: 8, baseColor: [120, 200, 50], variance: 25, density: 5, type: 'liquid', alive: true },
             lava: { id: 9, baseColor: [200, 60, 20], variance: 35, density: 6, type: 'liquid', alive: true },
@@ -661,13 +661,47 @@
             human: { id: 17, baseColor: [60, 80, 120], variance: 40, density: 9, type: 'creature', flammable: true },
             blood: { id: 18, baseColor: [140, 20, 20], variance: 10, density: 4, type: 'liquid' },
             cloud: { id: 19, baseColor: [230, 230, 240], variance: 15, density: -5, type: 'gas', life: 1200 },
+            acid_cloud: { id: 60, baseColor: [180, 230, 180], variance: 15, density: -5, type: 'gas', life: 1200 },
+            lava_cloud: { id: 61, baseColor: [230, 180, 160], variance: 15, density: -5, type: 'gas', life: 1200 },
+            meteor_cloud: { id: 62, baseColor: [100, 50, 50], variance: 10, density: -5, type: 'gas', life: 1200 },
             nitro: { id: 20, baseColor: [50, 220, 50], variance: 20, density: 3, type: 'liquid', flammable: true },
             methane: { id: 21, baseColor: [100, 120, 100], variance: 10, density: -4, type: 'gas', life: 400, flammable: true },
             void: { id: 22, baseColor: [10, 0, 10], variance: 0, density: 100, type: 'solid' },
             nuke: { id: 23, baseColor: [40, 40, 40], variance: 5, density: 20, type: 'solid', flammable: true },
-            tornado: { id: 24, baseColor: [100, 100, 120], variance: 30, density: -10, type: 'gas', life: 300 },
+            tnuke: { id: 63, baseColor: [30, 30, 30], variance: 5, density: 20, type: 'solid', flammable: true },
+            tornado: { id: 24, baseColor: [100, 100, 120], variance: 30, density: -10, type: 'gas', life: 600 },
             meteor: { id: 25, baseColor: [120, 60, 30], variance: 20, density: 30, type: 'solid', flammable: true },
-            laser: { id: 99, baseColor: [255, 0, 0], type: 'tool' }
+            laser: { id: 99, baseColor: [255, 0, 0], type: 'tool' },
+            soil: { id: 26, baseColor: [100, 80, 50], variance: 15, density: 10, type: 'powder' },
+            seed: { id: 27, baseColor: [200, 220, 100], variance: 10, density: 5, type: 'powder', flammable: true },
+            snow: { id: 28, baseColor: [240, 240, 255], variance: 5, density: 5, type: 'powder' },
+            salt: { id: 29, baseColor: [240, 230, 230], variance: 10, density: 8, type: 'powder' },
+            wax: { id: 30, baseColor: [240, 230, 180], variance: 10, density: 9, type: 'solid', flammable: true },
+            plastic: { id: 31, baseColor: [200, 50, 100], variance: 30, density: 9, type: 'solid', flammable: true },
+            gold: { id: 32, baseColor: [255, 215, 0], variance: 15, density: 25, type: 'solid' },
+            iron: { id: 33, baseColor: [100, 100, 110], variance: 10, density: 20, type: 'solid' },
+            brick: { id: 34, baseColor: [160, 60, 40], variance: 10, density: 15, type: 'solid' },
+            coal: { id: 35, baseColor: [20, 20, 20], variance: 5, density: 12, type: 'solid', flammable: true },
+            fuse: { id: 36, baseColor: [180, 160, 140], variance: 5, density: 8, type: 'solid', flammable: true },
+            mud: { id: 37, baseColor: [80, 60, 40], variance: 10, density: 6, type: 'liquid' },
+            slime: { id: 38, baseColor: [100, 220, 100], variance: 10, density: 6, type: 'liquid' },
+            mercury: { id: 39, baseColor: [180, 180, 190], variance: 5, density: 20, type: 'liquid' },
+            helium: { id: 40, baseColor: [240, 200, 240], variance: 5, density: -10, type: 'gas', life: 1000 },
+            bomb: { id: 41, baseColor: [30, 30, 30], variance: 0, density: 15, type: 'solid', flammable: true },
+            termite: { id: 42, baseColor: [200, 150, 100], variance: 20, density: 5, type: 'powder', alive: true },
+            antimatter: { id: 43, baseColor: [255, 255, 255], variance: 0, density: 0, type: 'gas', alive: true },
+            grey_goo: { id: 44, baseColor: [100, 100, 100], variance: 5, density: 10, type: 'liquid', alive: true },
+            napalm: { id: 45, baseColor: [255, 140, 0], variance: 10, density: 5, type: 'liquid', flammable: true },
+            thermite: { id: 46, baseColor: [150, 80, 80], variance: 15, density: 15, type: 'powder', flammable: true },
+            fungus: { id: 47, baseColor: [180, 100, 200], variance: 20, density: 6, type: 'solid', flammable: true },
+            poison: { id: 48, baseColor: [100, 0, 150], variance: 10, density: 4, type: 'liquid' },
+            radiation: { id: 49, baseColor: [100, 255, 100], variance: 20, density: -1, type: 'gas', life: 1000 },
+            uranium: { id: 55, baseColor: [100, 150, 100], variance: 15, density: 20, type: 'solid' },
+            drill: { id: 50, baseColor: [180, 180, 180], type: 'tool' },
+            freezer: { id: 51, baseColor: [150, 200, 255], type: 'tool' },
+            heater: { id: 52, baseColor: [255, 100, 50], type: 'tool' },
+            shock: { id: 53, baseColor: [255, 255, 100], type: 'tool' },
+            lightning: { id: 54, baseColor: [200, 200, 255], type: 'tool' }
         };
 
         function generateColor(type) {
@@ -1193,18 +1227,6 @@
         }
 
         function placeElement(x, y) {
-            // SPAWNABLES (Single click entities)
-            if (['tornado', 'nuke', 'meteor'].includes(selectedElement)) {
-                if (!canSpawn) return;
-                
-                // Spawn center
-                if (x >= 0 && x < cols && y >= 0 && y < rows) {
-                    setCell(x, y, createCell(selectedElement));
-                    canSpawn = false; // Prevent multiple spawns per click
-                }
-                return;
-            }
-
             // ORBITAL LASER TOOL
             if (selectedElement === 'laser') {
                 if (x >= 0 && x < cols) {
@@ -1329,7 +1351,7 @@
                 return;
             }
 
-            // TORNADO
+            // TORNADO (Improved)
             if (cell.type === 'tornado') {
                 cell.life--;
                 if (cell.life <= 0) {
@@ -1337,11 +1359,12 @@
                     return;
                 }
                 
-                // Move randomly
+                // Bias upwards 30% of time
+                const moveUp = Math.random() < 0.3;
                 const dirX = Math.random() > 0.5 ? 1 : -1;
-                const dirY = Math.random() > 0.5 ? 1 : -1;
+                const dirY = moveUp ? -1 : (Math.random() > 0.5 ? 1 : -1);
                 
-                // Chaos effect: Swap with neighbors or fling them
+                // Chaos effect: Swap with neighbors or fling them high
                 for (let dx = -1; dx <= 1; dx++) {
                     for (let dy = -1; dy <= 1; dy++) {
                         const nx = x + dx;
@@ -1349,8 +1372,8 @@
                         const neighbor = getCell(nx, ny);
                         if (neighbor && neighbor.type !== 'tornado' && neighbor.type !== 'stone' && neighbor.type !== 'void') {
                             // Fling!
-                            const flingX = nx + (Math.random() > 0.5 ? 2 : -2);
-                            const flingY = ny + (Math.random() > 0.5 ? -5 : 2); // Mostly up
+                            const flingX = nx + (Math.random() > 0.5 ? 3 : -3);
+                            const flingY = ny + (Math.random() > 0.3 ? -10 : -2); // Stronger updraft
                             if (getIdx(flingX, flingY) >= 0 && getCell(flingX, flingY).type === 'empty') {
                                 swap(nx, ny, flingX, flingY);
                             }
@@ -1368,8 +1391,36 @@
                 return;
             }
 
-            // NUKE
-            if (cell.type === 'nuke') {
+            // METEOR (Impact)
+            if (cell.type === 'meteor') {
+                const below = getCell(x, y + 1);
+                if (below && below.type === 'empty') {
+                    // Fall fast
+                    swap(x, y, x, y + 1);
+                } else if (below && below.type !== 'empty' && below.type !== 'fire' && below.type !== 'smoke') {
+                    // IMPACT!
+                    const radius = 8;
+                    for (let ex = -radius; ex <= radius; ex++) {
+                        for (let ey = -radius; ey <= radius; ey++) {
+                            if (ex*ex + ey*ey <= radius*radius) {
+                                const tx = x + ex;
+                                const ty = y + ey;
+                                if (getIdx(tx, ty) >= 0) {
+                                    if (Math.random() < 0.8) {
+                                        setCell(tx, ty, createCell('fire', 40));
+                                    } else {
+                                        setCell(tx, ty, createCell('empty'));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+
+            // NUKE & TNUKE
+            if (cell.type === 'nuke' || cell.type === 'tnuke') {
                 // Check for trigger
                 let triggered = false;
                 for (let dx = -1; dx <= 1; dx++) {
@@ -1381,9 +1432,11 @@
                     }
                 }
                 
-                if (triggered || Math.random() < 0.0001) { // very small self-detonate chance? no, safe.
+                if (triggered) {
                     // DETONATE
-                    const radius = 25;
+                    const isThermo = cell.type === 'tnuke';
+                    const radius = isThermo ? 100 : 25; // Massive radius for thermonuclear
+                    
                     for (let ex = -radius; ex <= radius; ex++) {
                         for (let ey = -radius; ey <= radius; ey++) {
                             if (ex*ex + ey*ey <= radius*radius) {
@@ -1391,18 +1444,20 @@
                                 const tx = x + ex;
                                 const ty = y + ey;
                                 if (getIdx(tx, ty) >= 0) {
-                                    if (Math.random() > dist / radius) {
-                                        setCell(tx, ty, createCell('fire', 50));
-                                    } else {
-                                        setCell(tx, ty, createCell('empty'));
+                                    // Thermo clears everything
+                                    if (isThermo || Math.random() > dist / radius) {
+                                        if (Math.random() < 0.2) {
+                                            setCell(tx, ty, createCell('fire', 100)); // Long lasting fire
+                                        } else {
+                                            setCell(tx, ty, createCell('empty'));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    // Flash effect could go here
                 } else {
-                     // Gravity for nuke (it's a heavy bomb)
+                     // Gravity
                      const below = getCell(x, y + 1);
                      if (below && (below.type === 'empty' || below.type === 'water')) {
                          swap(x, y, x, y + 1);
@@ -1482,44 +1537,27 @@
                 }
             }
 
-            // CLOUD
-            if (cell.type === 'cloud') {
-                // Dissipate logic
+            // CLOUDS & GAS
+            if (elem.type === 'gas') {
+                // Dissipate
                 if (Math.random() < 0.002) cell.life--;
                 if (cell.life <= 0) {
                      setCell(x, y, createCell('empty', 0));
                      return;
                 }
-
-                // Rain logic
-                if (Math.random() < 0.005) {
-                    setCell(x, y, createCell('water'));
-                    return;
-                }
                 
-                // Drift
-                const dir = Math.random() > 0.5 ? 1 : -1;
-                const side = getCell(x + dir, y);
-                if (side && side.type === 'empty') {
-                    swap(x, y, x + dir, y);
-                }
-                return;
-            }
+                // Cloud Rain Logic
+                if (cell.type === 'cloud' && Math.random() < 0.005) setCell(x, y, createCell('water'));
+                else if (cell.type === 'acid_cloud' && Math.random() < 0.005) setCell(x, y, createCell('acid'));
+                else if (cell.type === 'lava_cloud' && Math.random() < 0.005) setCell(x, y, createCell('lava'));
+                else if (cell.type === 'meteor_cloud' && Math.random() < 0.002) setCell(x, y, createCell('meteor'));
 
-            // GAS
-            if (elem.type === 'gas') {
-                // Steam to Cloud logic
+                // Steam to Cloud
                 if (cell.type === 'steam') {
                     if (y <= 1 || (getCell(x, y-1) && getCell(x, y-1).type === 'cloud')) {
                          setCell(x, y, createCell('cloud'));
                          return;
                     }
-                }
-
-                cell.life--;
-                if (cell.life <= 0) {
-                    setCell(x, y, createCell('empty', 0));
-                    return;
                 }
 
                 // Gas rising logic
@@ -1636,6 +1674,18 @@
                 }
             }
 
+            // URANIUM (Radiation Heat)
+            if (cell.type === 'uranium') {
+                if (Math.random() < 0.01) {
+                    const dx = Math.floor(Math.random() * 3) - 1;
+                    const dy = Math.floor(Math.random() * 3) - 1;
+                    const neighbor = getCell(x + dx, y + dy);
+                    if (neighbor && neighbor.type === 'empty') {
+                        setCell(x+dx, y+dy, createCell('radiation', 20));
+                    }
+                }
+            }
+
             // ACID
             if (cell.type === 'acid') {
                 for (let dx = -1; dx <= 1; dx++) {
@@ -1654,11 +1704,14 @@
 
             // PLANT
             if (cell.type === 'plant') {
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        const neighbor = getCell(x + dx, y + dy);
-                        if (neighbor && neighbor.type === 'water' && Math.random() < 0.01) {
-                            setCell(x + dx, y + dy, createCell('plant', 0));
+                if (cell.life < ELEMENTS.plant.maxGrowth) { // Check growth limit
+                    for (let dx = -1; dx <= 1; dx++) {
+                        for (let dy = -1; dy <= 1; dy++) {
+                            const neighbor = getCell(x + dx, y + dy);
+                            if (neighbor && neighbor.type === 'water' && Math.random() < 0.02) {
+                                // Consume water, grow plant
+                                setCell(x + dx, y + dy, createCell('plant', cell.life + 1));
+                            }
                         }
                     }
                 }
@@ -1883,6 +1936,9 @@
         }
 
         init();
+
+        // hehe it lasts till 1945
+        // so peak
     </script>
 </body>
 </html>
