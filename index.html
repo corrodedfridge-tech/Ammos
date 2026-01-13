@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Ammos</title>
+    <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            box-sizing: border-box;
+        }
+        #cursor-overlay {
+            position: fixed;
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            display: none;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        #menuCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -5;
+            pointer-events: none;
+        }
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #080808;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        #loadingScreen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: #111;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: #444;
+            transition: width 0.2s;
+        }
+        .loading-text {
+            color: #444;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal {
+            background: #0e0e0e;
+            border: 1px solid #222;
+            padding: 20px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .modal h2 {
+            margin: 0;
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            text-transform: lowercase;
+            letter-spacing: 1px;
+        }
+        .save-slot {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: #080808;
+            padding: 10px;
+            border: 1px solid #1a1a1a;
+        }
+        .slot-info {
+            flex: 1;
+            font-size: 10px;
+            color: #555;
+        }
+        .slot-btn {
+            background: #141414;
+            border: 1px solid #222;
+            color: #666;
+            padding: 4px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .slot-btn:hover {
+            border-color: #444;
+            color: #888;
+        }
+        .close-modal {
+            background: transparent;
+            border: none;
+            color: #444;
+            cursor: pointer;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 10px;
+        }
+        .close-modal:hover { color: #666; }
+        #gameCanvas {
+            touch-action: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #080808;
+            font-family: monospace;
+            color: #666;
+        }
+        #gameCanvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            display: block;
+        }
+        .header {
+            background: #0c0c0c;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #181818;
+            position: relative;
+            z-index: 20;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: normal;
+            color: #444;
+            transition: color 0.3s ease;
+        }
+        .header h1:hover {
+            color: #666;
+        }
+        .header-btns {
+            display: flex;
+            gap: 6px;
+        }
+        .btn {
+            background: #101010;
+            border: 1px solid #222;
+            color: #555;
+            padding: 5px 10px;
+            font-family: monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            background: #1a1a1a;
+            color: #777;
+        }
+        .btn:active {
+            background: #181818;
+            transform: translateY(1px);
+        }
+        .btn.active {
+            background: #222;
+            color: #888;
+            border-color: #444;
+        }
+        .canvas-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            position: relative;
+            z-index: 1;
+        }
+        .canvas-wrap.grid-active {
+            background-color: transparent;
+            background-image: 
+                linear-gradient(rgba(14,14,14,0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14,14,14,0.5) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: center;
+        }
+        
+        /* Settings Menu */
+        .settings-menu {
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 220px;
+            background: #0e0e0e;
+            border: 1px solid #222;
+            border-top: none;
+            padding: 10px;
+            gap: 12px;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .settings-menu.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .setting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .setting-header label {
+            font-size: 10px;
+            color: #666;
+        }
+        .setting-header span {
+            font-size: 10px;
+            color: #444;
+        }
+        .settings-menu input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #1a1a1a;
+            outline: none;
+            border-radius: 2px;
+            margin-top: 4px;
+            cursor: pointer;
+        }
+        .settings-menu input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #444;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .settings-menu input[type="range"]::-webkit-slider-thumb:hover {
+            background: #666;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        .checkbox-box {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #333;
+            background: #080808;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .checkbox-row:hover .checkbox-box {
+            border-color: #555;
+        }
+        .checkbox-row.active .checkbox-box {
+            background: #333;
+            border-color: #666;
+        }
+        .checkbox-row label {
+            font-size: 10px;
+            color: #666;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .category-bar {
+            display: flex;
+            background: #0a0a0a;
+            border-top: 1px solid #141414;
+        }
+        .cat-btn {
+            flex: 1;
+            background: #0a0a0a;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #444;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .cat-btn:hover {
+            color: #666;
+            background: #0d0d0d;
+        }
+        .cat-btn.active {
+            color: #888;
+            border-bottom-color: #444;
+            background: #0e0e0e;
+        }
+        .toolbar {
+            background: #0a0a0a;
+            padding: 8px 0 40px 0;
+            display: flex;
+            gap: 0;
+            overflow-x: scroll;
+            overflow-y: hidden;
+            border-top: 1px solid #141414;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x !important;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .toolbar::-webkit-scrollbar {
+            display: none;
+        }
+        .toolbar, .toolbar * {
+            touch-action: pan-x !important;
+        }
+        .toolbar-inner {
+            display: flex;
+            gap: 4px;
+            padding: 0 8px;
+            min-width: max-content;
+        }
+        .element-btn {
+            background: #0e0e0e;
+            border: 1px solid #1a1a1a;
+            color: #3a3a3a;
+            padding: 12px 16px;
+            font-family: monospace;
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+            text-transform: lowercase;
+            flex-shrink: 0;
+            touch-action: pan-x !important;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .element-btn:hover {
+            background: #121212;
+            color: #555;
+            border-color: #222;
+        }
+        .element-btn.active {
+            background: #141414;
+            border-color: #333;
+            color: #888;
+            transform: scale(1.05);
+        }
+        .element-btn:active {
+            background: #141414;
+            transform: scale(0.95);
+        }
+        .main {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* MAIN MENU */
+        #mainMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(8,8,8,0.4);
+            backdrop-filter: blur(2px);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        #mainMenu.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .logo {
+            font-size: 24px;
+            letter-spacing: 4px;
+            color: #444;
+            margin-bottom: 40px;
+            text-transform: lowercase;
+            border: 1px solid #222;
+            padding: 20px 40px;
+            background: #0c0c0c;
+        }
+        .play-btn {
+            background: #111;
+            border: 1px solid #222;
+            color: #555;
+            padding: 15px 50px;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+        .play-btn:hover {
+            background: #1a1a1a;
+            color: #888;
+            border-color: #444;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="menuCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -5; background: #080808;"></canvas>
+
+    <div id="loadingScreen">
+        <div class="logo" style="font-size: 16px; margin-bottom: 0; padding: 10px 20px;">loading world</div>
+        <div class="loader-bar"><div class="loader-progress" id="loadProgress"></div></div>
+        <div class="loading-text">initializing particles</div>
+    </div>
+
+    <div id="mainMenu">
+        <div class="logo">AMMOS</div>
+        <button id="playBtn" class="play-btn">START SIMULATION</button>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+            <button id="menuLoadBtn" class="btn" style="padding: 12px 24px; font-size: 12px; background: #111; border: 1px solid #333;">LOAD WORLD</button>
+            <button id="menuSettingsBtn" class="btn" style="padding: 12px 24px; font-size: 12px; background: #111; border: 1px solid #333;">SETTINGS</button>
+        </div>
+
+        <div id="mainSettingsPanel" class="settings-menu" style="position:relative; top:auto; right:auto; width: 280px; opacity:1; pointer-events:auto; transform:none; background: #0c0c0c; border: 1px solid #222; margin-top: 20px; display: none;">
+            <div class="setting-item">
+                <div class="setting-header"><label>resolution</label><span id="menuQualityLabel">medium</span></div>
+                <input type="range" id="menuQualityRange" min="1" max="3" value="2" step="1">
+            </div>
+            <div class="setting-item">
+                <div class="setting-header"><label>music volume</label><span id="menuVolLabel">5%</span></div>
+                <input type="range" id="menuMusicVolume" min="0" max="100" value="5">
+            </div>
+            <button id="closeMenuSettings" class="btn" style="width:100%; margin-top:10px; text-align: center;">close settings</button>
+        </div>
+    </div>
+    <div id="cursor-overlay"></div>
+
+    <div id="saveModal" class="modal-overlay">
+        <div class="modal">
+            <h2>save / load worlds</h2>
+            <div class="save-slot">
+                <div class="slot-info" id="slot1Info">slot 1: empty</div>
+                <button class="slot-btn" onclick="saveWorld(1)">save</button>
+                <button class="slot-btn" onclick="loadWorld(1)">load</button>
+            </div>
+            <div class="save-slot">
+                <div class="slot-info" id="slot2Info">slot 2: empty</div>
+                <button class="slot-btn" onclick="saveWorld(2)">save</button>
+                <button class="slot-btn" onclick="loadWorld(2)">load</button>
+            </div>
+            <div class="save-slot">
+                <div class="slot-info" id="slot3Info">slot 3: empty</div>
+                <button class="slot-btn" onclick="saveWorld(3)">save</button>
+                <button class="slot-btn" onclick="loadWorld(3)">load</button>
+            </div>
+            <button class="close-modal" id="closeSaveModal">close</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header" style="justify-content: center; gap: 20px;">
+            <div class="header-btns">
+                <button id="exitBtn" class="btn">exit</button>
+                <button id="saveBtn" class="btn">saves</button>
+                <button id="clearBtn" class="btn">clear</button>
+            </div>
+            <h1>ammos</h1>
+            <div class="header-btns">
+                <button id="pauseBtn" class="btn">pause</button>
+                <button id="settingsBtn" class="btn">settings</button>
+            </div>
+            
+            <div id="settingsMenu" class="settings-menu">
+                <div class="setting-item">
+                    <div class="setting-header">
+                        <label>music volume</label>
+                        <span id="volLabel">5%</span>
+                    </div>
+                    <input type="range" id="musicVolume" min="0" max="100" value="5">
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-header">
+                        <label>brush size</label>
+                        <span id="brushLabel">3</span>
+                    </div>
+                    <input type="range" id="brushSize" min="1" max="10" value="3">
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-header">
+                        <label>slow motion</label>
+                        <span id="speedLabel">max</span>
+                    </div>
+                    <input type="range" id="speedRange" min="0" max="10" value="0">
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-header">
+                        <label>resolution</label>
+                        <span id="qualityLabel">medium</span>
+                    </div>
+                    <input type="range" id="qualityRange" min="1" max="3" value="2" step="1">
+                </div>
+
+                <div class="checkbox-row active" id="gridToggle">
+                    <div class="checkbox-box"></div>
+                    <label>show grid</label>
+                </div>
+            </div>
+        </div>
+
+        <div id="canvasWrap" class="canvas-wrap">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="category-bar">
+            <button class="cat-btn active" data-cat="create">create</button>
+            <button class="cat-btn" data-cat="destroy">destroy</button>
+        </div>
+        <div class="toolbar">
+            <div class="toolbar-inner" id="toolbarInner">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let PIXEL_SIZE = 4;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrap = document.getElementById('canvasWrap');
+        
+        let width, height, cols, rows;
+        let grid = [];
+        let isPaused = false;
+        let selectedElement = 'sand';
+        let brushSize = 3;
+        let isDrawing = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        let simulationSpeed = 0; // 0 = max speed
+        let frameCount = 0;
+        let showGrid = false;
+        let currentCategory = 'create';
+        let particlesOpacity = 0.5;
+        let canSpawn = false;
+        let cursorVisibleTimer = null;
+
+        function showCursor() {
+            const cursor = document.getElementById('cursor-overlay');
+            cursor.style.display = 'block';
+            if (cursorVisibleTimer) clearTimeout(cursorVisibleTimer);
+            cursorVisibleTimer = setTimeout(() => {
+                cursor.style.display = 'none';
+            }, 1000);
+        }
+
+        // Audio
+        const bgMusicMenu = new Audio('https://raw.githubusercontent.com/corrodedfridge-tech/Ammos/main/Pixel%20Dawn%20at%20Rest.mp3');
+        const bgMusicGame = new Audio('https://raw.githubusercontent.com/corrodedfridge-tech/Ammos/main/Peaceful%20Pixels.mp3');
+        bgMusicMenu.loop = true;
+        bgMusicGame.loop = true;
+        bgMusicMenu.volume = 0.05;
+        bgMusicGame.volume = 0.05;
+
+        function setMusicState(state) {
+            if (state === 'menu') {
+                bgMusicGame.pause();
+                bgMusicGame.currentTime = 0;
+                bgMusicMenu.play().catch(e => console.log('Audio play failed', e));
+            } else if (state === 'game') {
+                bgMusicMenu.pause();
+                bgMusicMenu.currentTime = 0;
+                bgMusicGame.play().catch(e => console.log('Audio play failed', e));
+            }
+        }
+
+        const TOOLS = {
+            create: ['sand', 'water', 'stone', 'wood', 'plant', 'human', 'cement', 'ice', 'oil', 'glass', 'gunpowder', 'nitro', 'methane', 'eraser'],
+            destroy: ['fire', 'lava', 'acid', 'virus', 'smoke', 'steam', 'cloud', 'void', 'tornado', 'nuke', 'meteor', 'laser', 'eraser']
+        };
+
+        const ELEMENTS = {
+            empty: { id: 0, baseColor: [0, 0, 0], density: 0 },
+            sand: { id: 1, baseColor: [194, 158, 90], variance: 25, density: 8, type: 'powder' },
+            water: { id: 2, baseColor: [40, 100, 170], variance: 15, density: 4, type: 'liquid' },
+            stone: { id: 3, baseColor: [80, 75, 70], variance: 15, density: 10, type: 'solid' },
+            fire: { id: 4, baseColor: [220, 80, 20], variance: 40, density: -1, type: 'gas', life: 30, alive: true },
+            wood: { id: 5, baseColor: [90, 55, 30], variance: 20, density: 10, type: 'solid', flammable: true },
+            plant: { id: 6, baseColor: [45, 120, 50], variance: 20, density: 10, type: 'solid', flammable: true },
+            smoke: { id: 7, baseColor: [45, 45, 50], variance: 10, density: -2, type: 'gas', life: 100 },
+            acid: { id: 8, baseColor: [120, 200, 50], variance: 25, density: 5, type: 'liquid', alive: true },
+            lava: { id: 9, baseColor: [200, 60, 20], variance: 35, density: 6, type: 'liquid', alive: true },
+            ice: { id: 10, baseColor: [140, 190, 220], variance: 15, density: 10, type: 'solid' },
+            oil: { id: 11, baseColor: [50, 40, 30], variance: 10, density: 3, type: 'liquid', flammable: true },
+            gunpowder: { id: 12, baseColor: [40, 35, 30], variance: 8, density: 7, type: 'powder', flammable: true },
+            steam: { id: 13, baseColor: [70, 80, 90], variance: 10, density: -3, type: 'gas', life: 80 },
+            glass: { id: 14, baseColor: [200, 220, 230], variance: 5, density: 10, type: 'solid' },
+            virus: { id: 15, baseColor: [120, 40, 140], variance: 20, density: 5, type: 'powder', alive: true },
+            cement: { id: 16, baseColor: [140, 140, 145], variance: 10, density: 8, type: 'liquid', life: 300 },
+            human: { id: 17, baseColor: [60, 80, 120], variance: 40, density: 9, type: 'creature', flammable: true },
+            blood: { id: 18, baseColor: [140, 20, 20], variance: 10, density: 4, type: 'liquid' },
+            cloud: { id: 19, baseColor: [230, 230, 240], variance: 15, density: -5, type: 'gas', life: 1200 },
+            nitro: { id: 20, baseColor: [50, 220, 50], variance: 20, density: 3, type: 'liquid', flammable: true },
+            methane: { id: 21, baseColor: [100, 120, 100], variance: 10, density: -4, type: 'gas', life: 400, flammable: true },
+            void: { id: 22, baseColor: [10, 0, 10], variance: 0, density: 100, type: 'solid' },
+            nuke: { id: 23, baseColor: [40, 40, 40], variance: 5, density: 20, type: 'solid', flammable: true },
+            tornado: { id: 24, baseColor: [100, 100, 120], variance: 30, density: -10, type: 'gas', life: 300 },
+            meteor: { id: 25, baseColor: [120, 60, 30], variance: 20, density: 30, type: 'solid', flammable: true },
+            laser: { id: 99, baseColor: [255, 0, 0], type: 'tool' }
+        };
+
+        function generateColor(type) {
+            const elem = ELEMENTS[type];
+            if (!elem) return [0,0,0];
+            if (type === 'fire') return elem.baseColor; // Fire animates, initial color less important
+            if (!elem.variance) return elem.baseColor;
+            
+            const v = elem.variance;
+            return [
+                Math.max(0, Math.min(255, elem.baseColor[0] + (Math.random() - 0.5) * v)),
+                Math.max(0, Math.min(255, elem.baseColor[1] + (Math.random() - 0.5) * v)),
+                Math.max(0, Math.min(255, elem.baseColor[2] + (Math.random() - 0.5) * v))
+            ];
+        }
+
+        // Menu Particles
+        function initMenuParticles() {
+            const canvas = document.getElementById('menuCanvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            
+            window.addEventListener('resize', resize);
+            resize();
+
+            for(let i=0; i<100; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() * 0.5 + 0.2) * (Math.random() > 0.5 ? 1 : -1), // Sideways movement
+                    size: Math.random() * 2 + 1
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = `rgba(255, 255, 255, ${particlesOpacity})`;
+                
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    if(p.x < -10) p.x = width + 10;
+                    if(p.x > width + 10) p.x = -10;
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fill();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Save System
+        window.saveWorld = function(slot) {
+            const data = [];
+            let currentType = grid[0].type;
+            let count = 0;
+            
+            // Simple RLE
+            for(let i=0; i<grid.length; i++) {
+                if(grid[i].type === currentType) {
+                    count++;
+                } else {
+                    data.push(count + '|' + currentType);
+                    currentType = grid[i].type;
+                    count = 1;
+                }
+            }
+            data.push(count + '|' + currentType);
+            
+            const saveObj = {
+                date: new Date().toLocaleDateString(),
+                width: cols,
+                height: rows,
+                pixelSize: PIXEL_SIZE,
+                data: data.join(',')
+            };
+            
+            try {
+                localStorage.setItem('sandboxel_slot_' + slot, JSON.stringify(saveObj));
+                updateSlotInfo();
+                alert('saved to slot ' + slot);
+            } catch(e) {
+                alert('save failed (storage full?)');
+            }
+        };
+
+        window.loadWorld = function(slot) {
+            const json = localStorage.getItem('sandboxel_slot_' + slot);
+            if(!json) return;
+            
+            // Show loading screen
+            const loadingScreen = document.getElementById('loadingScreen');
+            const progress = document.getElementById('loadProgress');
+            loadingScreen.classList.add('active');
+            progress.style.width = '0%';
+            
+            setTimeout(() => {
+                try {
+                    const saveObj = JSON.parse(json);
+
+                    // Restore Resolution if saved
+                    if (saveObj.pixelSize && saveObj.pixelSize !== PIXEL_SIZE) {
+                        PIXEL_SIZE = saveObj.pixelSize;
+                        // Update UI
+                        const qSlider = document.getElementById('qualityRange');
+                        const qLabel = document.getElementById('qualityLabel');
+                        if (PIXEL_SIZE === 8) { qSlider.value = 1; qLabel.textContent = 'low'; }
+                        else if (PIXEL_SIZE === 4) { qSlider.value = 2; qLabel.textContent = 'medium'; }
+                        else { qSlider.value = 3; qLabel.textContent = 'high'; }
+                        
+                        resizeCanvas();
+                    }
+                    
+                    // Clear grid
+                    for(let i=0; i<grid.length; i++) {
+                        grid[i] = { type: 'empty', life: 0, updated: false, color: ELEMENTS.empty.baseColor };
+                    }
+                    
+                    progress.style.width = '50%';
+                    
+                    const chunks = saveObj.data.split(',');
+                    let gridIdx = 0;
+                    
+                    chunks.forEach(chunk => {
+                        const parts = chunk.split('|');
+                        const count = parseInt(parts[0]);
+                        const type = parts[1];
+                        
+                        for(let c=0; c<count; c++) {
+                            if(gridIdx < grid.length) {
+                                grid[gridIdx] = createCell(type);
+                                gridIdx++;
+                            }
+                        }
+                    });
+                    
+                    progress.style.width = '100%';
+                    setTimeout(() => {
+                        loadingScreen.classList.remove('active');
+                        document.getElementById('saveModal').classList.remove('open');
+                    }, 200);
+                    
+                } catch(e) {
+                    console.error(e);
+                    loadingScreen.classList.remove('active');
+                    alert('load failed');
+                }
+            }, 100);
+        };
+
+        function updateSlotInfo() {
+            for(let i=1; i<=3; i++) {
+                const json = localStorage.getItem('sandboxel_slot_' + i);
+                const el = document.getElementById('slot' + i + 'Info');
+                if(json) {
+                    const obj = JSON.parse(json);
+                    el.textContent = `slot ${i}: ${obj.date}`;
+                } else {
+                    el.textContent = `slot ${i}: empty`;
+                }
+            }
+        }
+
+        function init() {
+            initMenuParticles();
+            updateSlotInfo();
+            setMusicState('menu');
+            
+            // Wait for user to start
+            const playBtn = document.getElementById('playBtn');
+            const mainMenu = document.getElementById('mainMenu');
+            const loadingScreen = document.getElementById('loadingScreen');
+            const progress = document.getElementById('loadProgress');
+            
+            playBtn.addEventListener('click', () => {
+                mainMenu.classList.add('hidden');
+                loadingScreen.classList.add('active');
+                
+                // Fake loading
+                let p = 0;
+                const int = setInterval(() => {
+                    p += 5;
+                    progress.style.width = p + '%';
+                    if(p >= 100) {
+                        clearInterval(int);
+                        setTimeout(() => {
+                            loadingScreen.classList.remove('active');
+                            mainMenu.style.display = 'none';
+                            particlesOpacity = 0.15; // Dim particles for game
+                            resizeCanvas();
+                            setMusicState('game');
+                            requestAnimationFrame(gameLoop);
+                        }, 500);
+                    }
+                }, 20);
+            });
+
+            // Main Menu Buttons
+            document.getElementById('menuLoadBtn').addEventListener('click', () => {
+                document.getElementById('saveModal').classList.add('open');
+                updateSlotInfo();
+            });
+
+            const menuSettingsPanel = document.getElementById('mainSettingsPanel');
+            document.getElementById('menuSettingsBtn').addEventListener('click', () => {
+                menuSettingsPanel.style.display = 'block';
+                // Trigger reflow
+                void menuSettingsPanel.offsetWidth;
+                menuSettingsPanel.style.opacity = '1';
+                menuSettingsPanel.style.pointerEvents = 'auto';
+            });
+            document.getElementById('closeMenuSettings').addEventListener('click', () => {
+                menuSettingsPanel.style.opacity = '0';
+                menuSettingsPanel.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    menuSettingsPanel.style.display = 'none';
+                }, 300);
+            });
+
+            // Sync Main Menu Settings
+            const menuQSlider = document.getElementById('menuQualityRange');
+            const menuQLabel = document.getElementById('menuQualityLabel');
+            const gameQSlider = document.getElementById('qualityRange');
+            const gameQLabel = document.getElementById('qualityLabel');
+
+            menuQSlider.addEventListener('input', () => {
+                const val = parseInt(menuQSlider.value);
+                gameQSlider.value = val;
+                // Trigger change logic
+                if (val === 1) { PIXEL_SIZE = 8; menuQLabel.textContent = 'low'; gameQLabel.textContent = 'low'; }
+                else if (val === 2) { PIXEL_SIZE = 4; menuQLabel.textContent = 'medium'; gameQLabel.textContent = 'medium'; }
+                else { PIXEL_SIZE = 2; menuQLabel.textContent = 'high'; gameQLabel.textContent = 'high'; }
+                resizeCanvas();
+            });
+
+            const menuVSlider = document.getElementById('menuMusicVolume');
+            const menuVLabel = document.getElementById('menuVolLabel');
+            const gameVSlider = document.getElementById('musicVolume');
+            const gameVLabel = document.getElementById('volLabel');
+
+            menuVSlider.addEventListener('input', () => {
+                const val = menuVSlider.value;
+                gameVSlider.value = val;
+                const vol = parseInt(val) / 100;
+                bgMusicMenu.volume = vol;
+                bgMusicGame.volume = vol;
+                menuVLabel.textContent = val + '%';
+                gameVLabel.textContent = val + '%';
+            });
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            generateToolbar();
+            setupEventListeners();
+        }
+
+        function generateToolbar() {
+            const container = document.getElementById('toolbarInner');
+            container.innerHTML = '';
+            
+            const list = TOOLS[currentCategory] || TOOLS.create;
+            list.forEach(type => {
+                const btn = document.createElement('button');
+                btn.className = 'element-btn';
+                if (type === selectedElement) btn.classList.add('active');
+                btn.dataset.element = type;
+                btn.textContent = type;
+                
+                // Special styling/naming
+                if (type === 'gunpowder') btn.textContent = 'powder';
+                if (type === 'eraser') btn.textContent = 'erase';
+                
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.element-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedElement = type;
+                });
+                
+                container.appendChild(btn);
+            });
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            width = Math.floor(container.clientWidth / PIXEL_SIZE) * PIXEL_SIZE;
+            height = Math.floor(container.clientHeight / PIXEL_SIZE) * PIXEL_SIZE;
+            canvas.width = width;
+            canvas.height = height;
+            cols = Math.floor(width / PIXEL_SIZE);
+            rows = Math.floor(height / PIXEL_SIZE);
+            
+            const oldGrid = grid;
+            grid = [];
+            for (let i = 0; i < cols * rows; i++) {
+                grid[i] = oldGrid[i] || { type: 'empty', life: 0, updated: false, color: ELEMENTS.empty.baseColor };
+            }
+        }
+
+        function setupEventListeners() {
+            // Category Tabs
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentCategory = btn.dataset.cat;
+                    generateToolbar();
+                });
+            });
+
+            // Settings Menu Toggle
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsMenu = document.getElementById('settingsMenu');
+            settingsBtn.addEventListener('click', () => {
+                settingsMenu.classList.toggle('open');
+                settingsBtn.classList.toggle('active');
+            });
+
+            // Save Menu Toggle
+            const saveBtn = document.getElementById('saveBtn');
+            const saveModal = document.getElementById('saveModal');
+            const closeSaveModal = document.getElementById('closeSaveModal');
+            
+            saveBtn.addEventListener('click', () => {
+                saveModal.classList.add('open');
+                updateSlotInfo();
+            });
+            
+            closeSaveModal.addEventListener('click', () => {
+                saveModal.classList.remove('open');
+            });
+
+            // Close settings/modals when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) {
+                    settingsMenu.classList.remove('open');
+                    settingsBtn.classList.remove('active');
+                }
+                if (e.target === saveModal) {
+                    saveModal.classList.remove('open');
+                }
+            });
+
+            // Grid Toggle
+            const gridToggle = document.getElementById('gridToggle');
+            gridToggle.addEventListener('click', () => {
+                showGrid = !showGrid;
+                gridToggle.classList.toggle('active');
+                if (showGrid) {
+                    canvasWrap.classList.add('grid-active');
+                } else {
+                    canvasWrap.classList.remove('grid-active');
+                }
+            });
+
+            const brushSlider = document.getElementById('brushSize');
+            const brushLabel = document.getElementById('brushLabel');
+            brushSlider.addEventListener('input', () => {
+                brushSize = parseInt(brushSlider.value);
+                brushLabel.textContent = brushSize;
+            });
+
+            const speedSlider = document.getElementById('speedRange');
+            const speedLabel = document.getElementById('speedLabel');
+            speedSlider.addEventListener('input', () => {
+                simulationSpeed = parseInt(speedSlider.value);
+                speedLabel.textContent = simulationSpeed === 0 ? 'max' : simulationSpeed;
+            });
+
+            const qualitySlider = document.getElementById('qualityRange');
+            const qualityLabel = document.getElementById('qualityLabel');
+            qualitySlider.addEventListener('input', () => {
+                const val = parseInt(qualitySlider.value);
+                // Update Menu Slider
+                const menuQSlider = document.getElementById('menuQualityRange');
+                const menuQLabel = document.getElementById('menuQualityLabel');
+                if(menuQSlider) {
+                    menuQSlider.value = val;
+                }
+                
+                // 1=Low(8px), 2=Med(4px), 3=High(2px)
+                if (val === 1) {
+                    PIXEL_SIZE = 8;
+                    qualityLabel.textContent = 'low';
+                    if(menuQLabel) menuQLabel.textContent = 'low';
+                } else if (val === 2) {
+                    PIXEL_SIZE = 4;
+                    qualityLabel.textContent = 'medium';
+                    if(menuQLabel) menuQLabel.textContent = 'medium';
+                } else {
+                    PIXEL_SIZE = 2;
+                    qualityLabel.textContent = 'high';
+                    if(menuQLabel) menuQLabel.textContent = 'high';
+                }
+                resizeCanvas();
+            });
+
+            // Music Volume
+            const musicVolume = document.getElementById('musicVolume');
+            const volLabel = document.getElementById('volLabel');
+            musicVolume.addEventListener('input', () => {
+                const val = musicVolume.value;
+                const vol = parseInt(val) / 100;
+                bgMusicMenu.volume = vol;
+                bgMusicGame.volume = vol;
+                volLabel.textContent = val + '%';
+                
+                // Update Menu Slider
+                const menuVSlider = document.getElementById('menuMusicVolume');
+                const menuVLabel = document.getElementById('menuVolLabel');
+                if(menuVSlider) {
+                    menuVSlider.value = val;
+                    menuVLabel.textContent = val + '%';
+                }
+            });
+
+            // Exit Button
+            document.getElementById('exitBtn').addEventListener('click', () => {
+                document.getElementById('mainMenu').style.display = 'flex';
+                document.getElementById('mainMenu').classList.remove('hidden');
+                particlesOpacity = 0.5; // Restore menu opacity
+                setMusicState('menu');
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                for (let i = 0; i < grid.length; i++) {
+                    grid[i] = { type: 'empty', life: 0, updated: false, color: ELEMENTS.empty.baseColor };
+                }
+            });
+
+            const pauseBtn = document.getElementById('pauseBtn');
+            pauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? 'play' : 'pause';
+            });
+
+            canvas.addEventListener('mousedown', startDraw);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDraw);
+            canvas.addEventListener('mouseleave', stopDraw);
+
+            // Brush Size Wheel
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    brushSize = Math.min(10, brushSize + 1);
+                } else {
+                    brushSize = Math.max(1, brushSize - 1);
+                }
+                const slider = document.getElementById('brushSize');
+                const label = document.getElementById('brushLabel');
+                if (slider) slider.value = brushSize;
+                if (label) label.textContent = brushSize;
+                showCursor();
+                updateCursor(e); // Update position immediately
+            }, { passive: false });
+
+            // Toolbar Scroll Wheel
+            const toolbar = document.querySelector('.toolbar');
+            if(toolbar) {
+                toolbar.addEventListener('wheel', (e) => {
+                    if (e.deltaY !== 0) {
+                        e.preventDefault();
+                        toolbar.scrollLeft += e.deltaY;
+                    }
+                }, { passive: false });
+            }
+
+            canvas.addEventListener('touchstart', handleTouch, { passive: false });
+            canvas.addEventListener('touchmove', handleTouch, { passive: false });
+            canvas.addEventListener('touchend', stopDraw);
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            canSpawn = true; // Reset spawn flag on new click
+            updateCursor(e);
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+            document.getElementById('cursor-overlay').style.display = 'none';
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            if (e.type === 'touchstart') isDrawing = true;
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            mouseX = Math.floor((touch.clientX - rect.left) / PIXEL_SIZE);
+            mouseY = Math.floor((touch.clientY - rect.top) / PIXEL_SIZE);
+        }
+
+        function draw(e) {
+            updateCursor(e);
+            const rect = canvas.getBoundingClientRect();
+            mouseX = Math.floor((e.clientX - rect.left) / PIXEL_SIZE);
+            mouseY = Math.floor((e.clientY - rect.top) / PIXEL_SIZE);
+        }
+
+        function updateCursor(e) {
+            const cursor = document.getElementById('cursor-overlay');
+            // Only show on PC (mouse events)
+            if (e.type.startsWith('touch')) {
+                cursor.style.display = 'none';
+                return;
+            }
+            // cursor.style.display = 'block'; // Controlled by showCursor()
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            // brushSize is in simulation pixels. We need screen pixels.
+            const size = (brushSize * 2 - 1) * PIXEL_SIZE;
+            cursor.style.width = size + 'px';
+            cursor.style.height = size + 'px';
+        }
+
+        function placeElement(x, y) {
+            // SPAWNABLES (Single click entities)
+            if (['tornado', 'nuke', 'meteor'].includes(selectedElement)) {
+                if (!canSpawn) return;
+                
+                // Spawn center
+                if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                    setCell(x, y, createCell(selectedElement));
+                    canSpawn = false; // Prevent multiple spawns per click
+                }
+                return;
+            }
+
+            // ORBITAL LASER TOOL
+            if (selectedElement === 'laser') {
+                if (x >= 0 && x < cols) {
+                    // Actually laser blasts the whole column(s) around x
+                    for (let dx = -Math.floor(brushSize/2); dx <= Math.floor(brushSize/2); dx++) {
+                        const tx = x + dx;
+                        if(tx >= 0 && tx < cols) {
+                             for (let ly = 0; ly < rows; ly++) {
+                                 // Create fire and destroy
+                                 if (Math.random() < 0.3) {
+                                     setCell(tx, ly, createCell('fire', 5));
+                                 } else if (Math.random() < 0.9) {
+                                     setCell(tx, ly, createCell('empty'));
+                                 }
+                             }
+                        }
+                    }
+                }
+                return;
+            }
+
+            for (let dx = -brushSize + 1; dx < brushSize; dx++) {
+                for (let dy = -brushSize + 1; dy < brushSize; dy++) {
+                    if (dx * dx + dy * dy < brushSize * brushSize) {
+                        const px = x + dx;
+                        const py = y + dy;
+                        if (px >= 0 && px < cols && py >= 0 && py < rows) {
+                            const idx = py * cols + px;
+                            if (selectedElement === 'eraser') {
+                                grid[idx] = { type: 'empty', life: 0, updated: false, color: ELEMENTS.empty.baseColor };
+                            } else if (selectedElement === 'fire') {
+                                if (grid[idx].type === 'empty') {
+                                    grid[idx] = { 
+                                        type: 'fire', 
+                                        life: 30 + Math.random() * 20,
+                                        updated: false,
+                                        color: generateColor('fire')
+                                    };
+                                } else if (ELEMENTS[grid[idx].type]?.flammable) {
+                                    grid[idx] = { 
+                                        type: 'fire', 
+                                        life: 35 + Math.random() * 25,
+                                        updated: false,
+                                        color: generateColor('fire')
+                                    };
+                                }
+                            } else {
+                                const elem = ELEMENTS[selectedElement];
+                                if (!elem) return;
+                                
+                                // Standard placement rules
+                                if (grid[idx].type === 'empty' || (elem.type === 'liquid' && grid[idx].type === 'water')) { 
+                                    grid[idx] = { 
+                                        type: selectedElement, 
+                                        life: elem.life || 0,
+                                        updated: false,
+                                        color: generateColor(selectedElement)
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function getIdx(x, y) {
+            if (x < 0 || x >= cols || y < 0 || y >= rows) return -1;
+            return y * cols + x;
+        }
+
+        function getCell(x, y) {
+            const idx = getIdx(x, y);
+            return idx >= 0 ? grid[idx] : null;
+        }
+
+        function setCell(x, y, cell) {
+            const idx = getIdx(x, y);
+            if (idx >= 0) grid[idx] = cell;
+        }
+
+        function swap(x1, y1, x2, y2) {
+            const idx1 = getIdx(x1, y1);
+            const idx2 = getIdx(x2, y2);
+            if (idx1 >= 0 && idx2 >= 0) {
+                const temp = grid[idx1];
+                grid[idx1] = grid[idx2];
+                grid[idx2] = temp;
+                grid[idx1].updated = true;
+                grid[idx2].updated = true;
+            }
+        }
+
+        function createCell(type, life) {
+            return {
+                type: type,
+                life: life || ELEMENTS[type]?.life || 0,
+                updated: true,
+                color: generateColor(type)
+            };
+        }
+
+        function updateParticle(x, y) {
+            const cell = getCell(x, y);
+            if (!cell || cell.type === 'empty' || cell.updated) return;
+
+            const elem = ELEMENTS[cell.type];
+            if (!elem) return;
+
+            cell.updated = true;
+
+            // VOID
+            if (cell.type === 'void') {
+                for(let dx = -1; dx <= 1; dx++) {
+                    for(let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x+dx, y+dy);
+                        if(neighbor && neighbor.type !== 'void' && neighbor.type !== 'empty') {
+                            setCell(x+dx, y+dy, createCell('empty', 0));
+                        }
+                    }
+                }
+                return;
+            }
+
+            // TORNADO
+            if (cell.type === 'tornado') {
+                cell.life--;
+                if (cell.life <= 0) {
+                    setCell(x, y, createCell('empty'));
+                    return;
+                }
+                
+                // Move randomly
+                const dirX = Math.random() > 0.5 ? 1 : -1;
+                const dirY = Math.random() > 0.5 ? 1 : -1;
+                
+                // Chaos effect: Swap with neighbors or fling them
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        const neighbor = getCell(nx, ny);
+                        if (neighbor && neighbor.type !== 'tornado' && neighbor.type !== 'stone' && neighbor.type !== 'void') {
+                            // Fling!
+                            const flingX = nx + (Math.random() > 0.5 ? 2 : -2);
+                            const flingY = ny + (Math.random() > 0.5 ? -5 : 2); // Mostly up
+                            if (getIdx(flingX, flingY) >= 0 && getCell(flingX, flingY).type === 'empty') {
+                                swap(nx, ny, flingX, flingY);
+                            }
+                        }
+                    }
+                }
+                
+                // Move self
+                const dest = getCell(x + dirX, y + dirY);
+                if (dest && (dest.type === 'empty' || dest.type === 'cloud' || dest.type === 'smoke')) {
+                    swap(x, y, x + dirX, y + dirY);
+                } else if (getCell(x + dirX, y) && getCell(x + dirX, y).type === 'empty') {
+                    swap(x, y, x + dirX, y);
+                }
+                return;
+            }
+
+            // NUKE
+            if (cell.type === 'nuke') {
+                // Check for trigger
+                let triggered = false;
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor && (neighbor.type === 'fire' || neighbor.type === 'lava' || neighbor.type === 'laser')) {
+                            triggered = true;
+                        }
+                    }
+                }
+                
+                if (triggered || Math.random() < 0.0001) { // very small self-detonate chance? no, safe.
+                    // DETONATE
+                    const radius = 25;
+                    for (let ex = -radius; ex <= radius; ex++) {
+                        for (let ey = -radius; ey <= radius; ey++) {
+                            if (ex*ex + ey*ey <= radius*radius) {
+                                const dist = Math.sqrt(ex*ex + ey*ey);
+                                const tx = x + ex;
+                                const ty = y + ey;
+                                if (getIdx(tx, ty) >= 0) {
+                                    if (Math.random() > dist / radius) {
+                                        setCell(tx, ty, createCell('fire', 50));
+                                    } else {
+                                        setCell(tx, ty, createCell('empty'));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Flash effect could go here
+                } else {
+                     // Gravity for nuke (it's a heavy bomb)
+                     const below = getCell(x, y + 1);
+                     if (below && (below.type === 'empty' || below.type === 'water')) {
+                         swap(x, y, x, y + 1);
+                     }
+                }
+                return;
+            }
+
+            // HUMAN
+            if (cell.type === 'human') {
+                const below = getCell(x, y + 1);
+                if (below && below.type === 'empty') {
+                    swap(x, y, x, y + 1);
+                    return;
+                } else if (below && (below.type === 'water' || below.type === 'oil' || below.type === 'blood' || below.type === 'nitro')) {
+                    if (Math.random() < 0.5) swap(x, y, x, y + 1);
+                    return;
+                }
+                
+                // Hazard detection
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor) {
+                            if (neighbor.type === 'fire' || neighbor.type === 'lava' || neighbor.type === 'acid') {
+                                setCell(x, y, createCell('blood'));
+                                return;
+                            }
+                            if (neighbor.type === 'virus') {
+                                setCell(x, y, createCell('virus'));
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // AI Movement
+                if (Math.random() < 0.1) {
+                    const dir = Math.random() > 0.5 ? 1 : -1;
+                    const side = getCell(x + dir, y);
+                    if (side && side.type === 'empty') {
+                        swap(x, y, x + dir, y);
+                    } else if (side && (side.type === 'water' || side.type === 'blood')) {
+                        swap(x, y, x + dir, y);
+                    } else {
+                        // Jump up small obstacles
+                        const upSide = getCell(x + dir, y - 1);
+                        if (upSide && upSide.type === 'empty') {
+                            swap(x, y, x + dir, y - 1);
+                        }
+                    }
+                }
+                return;
+            }
+
+            // VIRUS
+            if (cell.type === 'virus') {
+                 for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor && (neighbor.type === 'human' || neighbor.type === 'plant' || neighbor.type === 'wood')) {
+                            if (Math.random() < 0.05) {
+                                setCell(x + dx, y + dy, createCell('virus'));
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // CEMENT
+            if (cell.type === 'cement') {
+                cell.life--;
+                if (cell.life <= 0) {
+                    setCell(x, y, createCell('stone'));
+                    return;
+                }
+            }
+
+            // CLOUD
+            if (cell.type === 'cloud') {
+                // Dissipate logic
+                if (Math.random() < 0.002) cell.life--;
+                if (cell.life <= 0) {
+                     setCell(x, y, createCell('empty', 0));
+                     return;
+                }
+
+                // Rain logic
+                if (Math.random() < 0.005) {
+                    setCell(x, y, createCell('water'));
+                    return;
+                }
+                
+                // Drift
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                const side = getCell(x + dir, y);
+                if (side && side.type === 'empty') {
+                    swap(x, y, x + dir, y);
+                }
+                return;
+            }
+
+            // GAS
+            if (elem.type === 'gas') {
+                // Steam to Cloud logic
+                if (cell.type === 'steam') {
+                    if (y <= 1 || (getCell(x, y-1) && getCell(x, y-1).type === 'cloud')) {
+                         setCell(x, y, createCell('cloud'));
+                         return;
+                    }
+                }
+
+                cell.life--;
+                if (cell.life <= 0) {
+                    setCell(x, y, createCell('empty', 0));
+                    return;
+                }
+
+                // Gas rising logic
+                // Try straight up
+                const above = getCell(x, y - 1);
+                if (above && (above.type === 'empty' || (ELEMENTS[above.type] && ELEMENTS[above.type].density > elem.density))) {
+                    swap(x, y, x, y - 1);
+                    return;
+                }
+                
+                // Try up-left/up-right
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                const aboveSide = getCell(x + dir, y - 1);
+                 if (aboveSide && (aboveSide.type === 'empty' || (ELEMENTS[aboveSide.type] && ELEMENTS[aboveSide.type].density > elem.density))) {
+                    swap(x, y, x + dir, y - 1);
+                    return;
+                }
+                const aboveOther = getCell(x - dir, y - 1);
+                 if (aboveOther && (aboveOther.type === 'empty' || (ELEMENTS[aboveOther.type] && ELEMENTS[aboveOther.type].density > elem.density))) {
+                    swap(x, y, x - dir, y - 1);
+                    return;
+                }
+                
+                // Sideways if stuck
+                const side = getCell(x + dir, y);
+                if (side && side.type === 'empty') {
+                    swap(x, y, x + dir, y);
+                }
+                return;
+            }
+
+            // FIRE
+            if (cell.type === 'fire') {
+                cell.life--;
+                if (cell.life <= 0 || Math.random() < 0.05) {
+                    if (Math.random() < 0.3) {
+                        setCell(x, y, createCell('smoke', 100 + Math.random() * 50));
+                    } else {
+                        setCell(x, y, createCell('empty', 0));
+                    }
+                    return;
+                }
+
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        // Ignite flammable
+                        if (neighbor && ELEMENTS[neighbor.type]?.flammable && Math.random() < 0.1) {
+                            setCell(x + dx, y + dy, createCell('fire', 30 + Math.random() * 20));
+                        }
+                        // Water/Steam
+                        if (neighbor && neighbor.type === 'water') {
+                            setCell(x, y, createCell('steam', 100));
+                            setCell(x + dx, y + dy, createCell('steam', 100));
+                            return;
+                        }
+                        // Ice melt
+                        if (neighbor && neighbor.type === 'ice') {
+                            setCell(x + dx, y + dy, createCell('water', 0));
+                            if (Math.random() < 0.3) {
+                                setCell(x, y, createCell('empty', 0));
+                            }
+                        }
+                        // Explosion
+                        if (neighbor && (neighbor.type === 'gunpowder' || neighbor.type === 'nitro' || neighbor.type === 'methane') && Math.random() < 0.5) {
+                            const radius = neighbor.type === 'nitro' ? 8 : (neighbor.type === 'methane' ? 4 : 3);
+                            for (let ex = -radius; ex <= radius; ex++) {
+                                for (let ey = -radius; ey <= radius; ey++) {
+                                    if (ex*ex + ey*ey <= radius*radius) {
+                                        const expCell = getCell(x + dx + ex, y + dy + ey);
+                                        if (expCell && expCell.type !== 'stone' && expCell.type !== 'void') {
+                                            if (Math.random() < 0.7) {
+                                                setCell(x + dx + ex, y + dy + ey, createCell('fire', 20));
+                                            } else {
+                                                setCell(x + dx + ex, y + dy + ey, createCell('empty', 0));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (Math.random() < 0.4) {
+                    const above = getCell(x, y - 1);
+                    if (above && above.type === 'empty') {
+                        swap(x, y, x, y - 1);
+                    }
+                }
+                return;
+            }
+
+            // LAVA
+            if (cell.type === 'lava') {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor) {
+                            if (ELEMENTS[neighbor.type]?.flammable && Math.random() < 0.2) {
+                                setCell(x + dx, y + dy, createCell('fire', 40));
+                            }
+                            // Water to Steam (Boil)
+                            if (neighbor.type === 'water') {
+                                setCell(x + dx, y + dy, createCell('steam', 200));
+                                setCell(x, y, createCell('stone', 0));
+                                return;
+                            }
+                            if (neighbor.type === 'ice') {
+                                setCell(x + dx, y + dy, createCell('water', 0));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ACID
+            if (cell.type === 'acid') {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor && neighbor.type !== 'empty' && neighbor.type !== 'acid' && neighbor.type !== 'stone' && neighbor.type !== 'glass' && neighbor.type !== 'void' && Math.random() < 0.05) {
+                            setCell(x + dx, y + dy, createCell('empty', 0));
+                            if (Math.random() < 0.3) {
+                                setCell(x, y, createCell('smoke', 30));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // PLANT
+            if (cell.type === 'plant') {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor && neighbor.type === 'water' && Math.random() < 0.01) {
+                            setCell(x + dx, y + dy, createCell('plant', 0));
+                        }
+                    }
+                }
+                return;
+            }
+
+            // ICE
+            if (cell.type === 'ice') {
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dy = -2; dy <= 2; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor && (neighbor.type === 'fire' || neighbor.type === 'lava') && Math.random() < 0.1) {
+                            setCell(x, y, createCell('water', 0));
+                            return;
+                        }
+                    }
+                }
+                return;
+            }
+
+            // WATER
+            if (cell.type === 'water') {
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const neighbor = getCell(x + dx, y + dy);
+                        if (neighbor && neighbor.type === 'ice' && Math.random() < 0.002) {
+                            setCell(x, y, createCell('ice', 0));
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // POWDER
+            if (elem.type === 'powder') {
+                const below = getCell(x, y + 1);
+                if (below && (below.type === 'empty' || (ELEMENTS[below.type]?.type === 'liquid'))) {
+                    swap(x, y, x, y + 1);
+                    return;
+                }
+
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                const belowSide = getCell(x + dir, y + 1);
+                if (belowSide && (belowSide.type === 'empty' || (ELEMENTS[belowSide.type]?.type === 'liquid'))) {
+                    swap(x, y, x + dir, y + 1);
+                    return;
+                }
+                const belowOther = getCell(x - dir, y + 1);
+                if (belowOther && (belowOther.type === 'empty' || (ELEMENTS[belowOther.type]?.type === 'liquid'))) {
+                    swap(x, y, x - dir, y + 1);
+                }
+                return;
+            }
+
+            // LIQUID
+            if (elem.type === 'liquid') {
+                const below = getCell(x, y + 1);
+                if (below && below.type === 'empty') {
+                    swap(x, y, x, y + 1);
+                    return;
+                }
+
+                // Density-based displacement (Vertical)
+                if (below && ELEMENTS[below.type]?.type === 'liquid' && ELEMENTS[below.type].density < elem.density) {
+                    swap(x, y, x, y + 1);
+                    return;
+                }
+
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                
+                // Try moving down-left or down-right (Gravity + Flow)
+                const belowSide = getCell(x + dir, y + 1);
+                if (belowSide && (belowSide.type === 'empty' || (ELEMENTS[belowSide.type]?.type === 'liquid' && ELEMENTS[belowSide.type].density < elem.density))) {
+                    swap(x, y, x + dir, y + 1);
+                    return;
+                }
+                const belowOther = getCell(x - dir, y + 1);
+                if (belowOther && (belowOther.type === 'empty' || (ELEMENTS[belowOther.type]?.type === 'liquid' && ELEMENTS[belowOther.type].density < elem.density))) {
+                    swap(x, y, x - dir, y + 1);
+                    return;
+                }
+
+                const spreadDist = elem.id === ELEMENTS.water.id ? 5 : 3;
+                for (let i = 0; i < spreadDist; i++) {
+                    const side = getCell(x + dir * (i + 1), y);
+                    if (side && side.type === 'empty') {
+                        swap(x, y, x + dir * (i + 1), y);
+                        return;
+                    } else if (side && side.type !== 'empty') {
+                        break;
+                    }
+                }
+                for (let i = 0; i < spreadDist; i++) {
+                    const side = getCell(x - dir * (i + 1), y);
+                    if (side && side.type === 'empty') {
+                        swap(x, y, x - dir * (i + 1), y);
+                        return;
+                    } else if (side && side.type !== 'empty') {
+                        break;
+                    }
+                }
+            }
+        }
+
+        function update() {
+            if (isPaused) return;
+
+            frameCount++;
+            if (simulationSpeed > 0 && frameCount % (simulationSpeed + 1) !== 0) {
+                return;
+            }
+
+            for (let i = 0; i < grid.length; i++) {
+                grid[i].updated = false;
+            }
+
+            for (let y = rows - 1; y >= 0; y--) {
+                const leftToRight = Math.random() > 0.5;
+                for (let i = 0; i < cols; i++) {
+                    const x = leftToRight ? i : cols - 1 - i;
+                    updateParticle(x, y);
+                }
+            }
+        }
+
+        function render() {
+            const imageData = ctx.createImageData(width, height);
+            const data = imageData.data;
+            const time = Date.now() * 0.01;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const cell = grid[y * cols + x];
+                    
+                    if (cell.type === 'empty') {
+                        // Make empty cells transparent so CSS background shows
+                        for (let py = 0; py < PIXEL_SIZE; py++) {
+                            for (let px = 0; px < PIXEL_SIZE; px++) {
+                                const idx = ((y * PIXEL_SIZE + py) * width + (x * PIXEL_SIZE + px)) * 4;
+                                data[idx + 3] = 0; // Transparent
+                            }
+                        }
+                        continue;
+                    }
+
+                    let color = cell.color;
+                    
+                    // Animate alive elements
+                    if (ELEMENTS[cell.type]?.alive) {
+                        const baseColor = cell.color;
+                        const pulse = Math.sin(time + x * 0.5 + y * 0.3) * 0.5 + 0.5;
+                        const flicker = Math.random() * 0.15;
+                        
+                        if (cell.type === 'lava') {
+                            color = [
+                                Math.min(255, baseColor[0] + pulse * 40),
+                                Math.min(255, baseColor[1] + pulse * 20),
+                                Math.min(255, baseColor[2] + pulse * 10)
+                            ];
+                        } else if (cell.type === 'acid') {
+                            color = [
+                                baseColor[0] + pulse * 20,
+                                Math.min(255, baseColor[1] + pulse * 30),
+                                baseColor[2] + pulse * 15
+                            ];
+                        } else if (cell.type === 'fire') {
+                            const intensity = Math.random();
+                            color = [
+                                Math.min(255, baseColor[0] + intensity * 35),
+                                Math.max(0, baseColor[1] + intensity * 40 - 20),
+                                Math.max(0, baseColor[2] - intensity * 10)
+                            ];
+                        }
+                    }
+                    
+                    if (cell.type === 'human') {
+                        // Human Sprite (Head, Clothes, Shoes)
+                        const skinColor = [255, 205, 175];
+                        const shoeColor = [30, 30, 30];
+                        
+                        for (let py = 0; py < PIXEL_SIZE; py++) {
+                            let drawColor = color; // Default to clothes
+                            
+                            // Dynamic scaling for sprite parts
+                            const yPct = py / PIXEL_SIZE;
+                            if (yPct < 0.25) drawColor = skinColor;      // Top 25% Head
+                            else if (yPct > 0.75) drawColor = shoeColor; // Bottom 25% Shoes
+                            
+                            for (let px = 0; px < PIXEL_SIZE; px++) {
+                                const idx = ((y * PIXEL_SIZE + py) * width + (x * PIXEL_SIZE + px)) * 4;
+                                data[idx] = drawColor[0];
+                                data[idx + 1] = drawColor[1];
+                                data[idx + 2] = drawColor[2];
+                                data[idx + 3] = 255;
+                            }
+                        }
+                    } else {
+                        // Standard Rendering
+                        for (let py = 0; py < PIXEL_SIZE; py++) {
+                            for (let px = 0; px < PIXEL_SIZE; px++) {
+                                const idx = ((y * PIXEL_SIZE + py) * width + (x * PIXEL_SIZE + px)) * 4;
+                                data[idx] = color[0];
+                                data[idx + 1] = color[1];
+                                data[idx + 2] = color[2];
+                                data[idx + 3] = 255;
+                            }
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function gameLoop() {
+            if (isDrawing) {
+                placeElement(mouseX, mouseY);
+            }
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        init();
+    </script>
+</body>
+</html>
